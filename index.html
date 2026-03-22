@@ -10,6 +10,11 @@
 
     * {
       box-sizing: border-box;
+      cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'><filter id='shadow' x='-20%25' y='-20%25' width='140%25' height='140%25'><feDropShadow dx='0' dy='1' stdDeviation='1' flood-color='black' flood-opacity='0.4'/></filter><path d='M 1 1 L 1 13 L 4 10 L 6.5 15.5 L 8 14.5 L 5.5 9 L 9.5 9 Z' fill='transparent' stroke='white' stroke-width='1.2' stroke-linejoin='round' filter='url(%23shadow)' /></svg>") 1 1, auto;
+    }
+
+    a, button, .focus-mode-btn, .interactive-text {
+      cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'><filter id='shadow' x='-20%25' y='-20%25' width='140%25' height='140%25'><feDropShadow dx='0' dy='1' stdDeviation='1' flood-color='black' flood-opacity='0.4'/></filter><path d='M 1 1 L 1 13 L 4 10 L 6.5 15.5 L 8 14.5 L 5.5 9 L 9.5 9 Z' fill='transparent' stroke='%2300f3ff' stroke-width='1.2' stroke-linejoin='round' filter='url(%23shadow)' /></svg>") 1 1, pointer !important;
     }
 
     body,
@@ -450,14 +455,34 @@
     }
 
     @keyframes lock-flash {
-      0% { transform: scale(1); filter: brightness(1); }
-      50% { transform: scale(1.05); filter: brightness(2); }
-      100% { transform: scale(1); filter: brightness(1); }
+      0% {
+        transform: scale(1);
+        filter: brightness(1);
+      }
+
+      50% {
+        transform: scale(1.05);
+        filter: brightness(2);
+      }
+
+      100% {
+        transform: scale(1);
+        filter: brightness(1);
+      }
     }
 
     @keyframes pulse-text {
-      0%, 100% { opacity: 1; text-shadow: 0 0 10px rgba(0, 243, 255, 0.8); }
-      50% { opacity: 0.4; text-shadow: 0 0 2px rgba(0, 243, 255, 0.3); }
+
+      0%,
+      100% {
+        opacity: 1;
+        text-shadow: 0 0 10px rgba(0, 243, 255, 0.8);
+      }
+
+      50% {
+        opacity: 0.4;
+        text-shadow: 0 0 2px rgba(0, 243, 255, 0.3);
+      }
     }
   </style>
   <script type="module" src="https://unpkg.com/@splinetool/viewer@1.0.51/build/spline-viewer.js"></script>
@@ -465,10 +490,10 @@
     document.addEventListener("DOMContentLoaded", () => {
       const viewer = document.querySelector("spline-viewer");
       const loaderWrapper = document.getElementById("loader-wrapper");
-      
+
       const decryptorText = document.getElementById("decryptor-text");
       const targetText = "SYSTEM ONLINE";
-      
+
       if (viewer) {
         const hideLogoAndLoader = () => {
           // Hide Spline Logo
@@ -476,7 +501,7 @@
             const logo = viewer.shadowRoot.querySelector("#logo");
             if (logo) logo.style.display = "none";
           }
-          
+
           if (loaderWrapper && !loaderWrapper.classList.contains("hidden")) {
             // Stop scrambling and set final text before fading out
             if (window.scrambleInterval) clearInterval(window.scrambleInterval);
@@ -484,7 +509,7 @@
               decryptorText.innerText = targetText;
               decryptorText.classList.add("locked");
             }
-            
+
             // Wait just a tiny bit so the user can see "SYSTEM ONLINE" before it disappears
             setTimeout(() => {
               loaderWrapper.classList.add("hidden");
@@ -492,13 +517,13 @@
             }, 800);
           }
         };
-        
+
         // Wait for Spline model to finish loading before hiding the loader
         viewer.addEventListener("load", hideLogoAndLoader);
-        
+
         // Fallback: If Spline viewer fails to fire 'load', clear it after 4 seconds max
         setTimeout(hideLogoAndLoader, 4000);
-        
+
         // Keep scrubbing the logo just in case
         setInterval(() => {
           if (viewer.shadowRoot) {
@@ -530,7 +555,7 @@
       if (focusBtn) {
         focusBtn.addEventListener("click", (e) => {
           document.body.classList.toggle("focus-mode-active");
-          
+
           if (document.body.classList.contains("focus-mode-active")) {
             const centerX = window.innerWidth / 2;
             const centerY = window.innerHeight * 0.55;
@@ -564,15 +589,15 @@
     </div>
   </div>
   <script>
-    (function() {
+    (function () {
       const el = document.getElementById('decryptor-text');
       const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*";
       const target = "SYSTEM ONLINE";
-      
+
       // Execute scramble immediately upon HTML parsing
       window.scrambleInterval = setInterval(() => {
         let str = "";
-        for(let i=0; i<target.length; i++) {
+        for (let i = 0; i < target.length; i++) {
           str += target[i] === " " ? " " : chars.charAt(Math.floor(Math.random() * chars.length));
         }
         el.innerText = str;
