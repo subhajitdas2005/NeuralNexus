@@ -29,6 +29,13 @@
       background: #030014;
       font-family: 'Inter', sans-serif;
       scroll-behavior: smooth;
+      scroll-snap-type: y proximity;
+      -ms-overflow-style: none;  /* IE and Edge */
+      scrollbar-width: none;  /* Firefox */
+    }
+
+    body::-webkit-scrollbar {
+      display: none; /* Chrome, Safari and Opera */
     }
 
     main {
@@ -80,15 +87,17 @@
       position: absolute;
       bottom: -6px;
       left: 50%;
-      transform: translateX(-50%);
-      width: 0;
+      transform: translateX(-50%) scaleX(0);
+      transform-origin: center;
+      width: 100%;
       height: 1px;
       background-color: rgba(255, 255, 255, 0.8);
-      transition: width 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+      transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+      will-change: transform;
     }
 
     .minimal-header a:hover::after {
-      width: 100%;
+      transform: translateX(-50%) scaleX(1);
     }
 
     .minimal-header a:not(:first-child)::before {
@@ -160,6 +169,18 @@
       }
     }
 
+    [data-animate] {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1), transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: opacity, transform;
+    }
+
+    [data-animate].visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
     /* Liquid Glare Effect Classes */
     .interactive-text {
       pointer-events: auto;
@@ -196,8 +217,10 @@
       gap: 1.2rem;
       z-index: 10;
       opacity: 0;
-      will-change: transform;
+      will-change: transform, opacity;
       backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      transform: translateZ(0);
     }
 
     body.ready .system-status {
@@ -315,7 +338,7 @@
       position: absolute;
       top: 2.2rem;
       left: 4rem;
-      transform: none;
+      transform: translateZ(0);
       background: rgba(255, 255, 255, 0.05);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
@@ -331,7 +354,8 @@
       font-weight: 500;
       cursor: pointer;
       z-index: 50;
-      transition: all 0.3s ease;
+      transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
+      will-change: transform, background, box-shadow;
     }
 
     .focus-mode-btn:hover {
@@ -500,6 +524,7 @@
       height: 100vh;
       overflow: hidden;
       background: radial-gradient(circle at 50% 50%, #1f013d 0%, #030014 65%);
+      scroll-snap-align: start;
     }
 
     .hero-section::after {
@@ -515,55 +540,47 @@
     }
 
     /* Scroll Down Indicator */
-    .scroll-indicator {
-      position: absolute;
-      bottom: 2.5rem;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 20;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.5rem;
-      opacity: 0;
-      pointer-events: auto;
-    }
 
-    body.ready .scroll-indicator {
-      animation: fadeIn 1.5s ease-out 1.5s forwards;
-    }
-
-    .scroll-indicator span {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 3px;
-      color: rgba(255, 255, 255, 0.4);
-    }
-
-    .scroll-arrow {
-      width: 24px;
-      height: 24px;
-      border-right: 2px solid rgba(255, 255, 255, 0.4);
-      border-bottom: 2px solid rgba(255, 255, 255, 0.4);
-      transform: rotate(45deg);
-      animation: scrollBounce 2s infinite;
-    }
-
-    @keyframes scrollBounce {
-      0%, 20%, 50%, 80%, 100% { transform: rotate(45deg) translateY(0); }
-      40% { transform: rotate(45deg) translateY(8px); }
-      60% { transform: rotate(45deg) translateY(4px); }
-    }
 
     /* === MACHINE LEARNING SECTION === */
     .ml-section {
       position: relative;
       min-height: 100vh;
       width: 100%;
-      background: radial-gradient(circle at 50% 50%, #1f013d 0%, #030014 65%);
-      padding: 8rem 4rem 6rem;
+      background: #030014;
+      padding: 0 4rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       overflow: hidden;
       margin-top: -2px;
+      z-index: 1;
+      scroll-snap-align: start;
+      scroll-margin-top: 2px;
+    }
+
+    .ml-container {
+      width: 100%;
+      max-width: 1200px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      z-index: 2;
+    }
+
+    .ml-section-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 50% 50%, #1f013d 0%, #030014 65%);
+      z-index: -1;
+      will-change: transform;
+      transform: translateZ(0);
     }
 
     .ml-section::after {
@@ -607,6 +624,8 @@
       opacity: 0.15;
       pointer-events: none;
       animation: orbFloat 12s ease-in-out infinite;
+      will-change: transform;
+      transform: translateZ(0);
     }
 
     .ml-bg-orb.orb-1 {
@@ -645,9 +664,10 @@
     /* Section Header */
     .ml-header {
       text-align: center;
-      margin-bottom: 5rem;
+      margin-bottom: 3.5rem;
       position: relative;
       z-index: 2;
+      width: 100%;
     }
 
     .ml-badge {
@@ -703,7 +723,7 @@
       position: relative;
       z-index: 2;
       max-width: 1200px;
-      margin: 0 auto 5rem;
+      margin: 0;
     }
 
     .ml-card {
@@ -715,7 +735,16 @@
       padding: 2.5rem 2rem;
       position: relative;
       overflow: hidden;
-      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), 
+                  border-color 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform;
+      transform: translateZ(0);
+      z-index: 1;
+    }
+
+    .ml-card > * {
+      position: relative;
+      z-index: 1;
     }
 
     .ml-card::before {
@@ -728,17 +757,32 @@
       background: linear-gradient(90deg, transparent, var(--card-accent, #00f3ff), transparent);
       opacity: 0;
       transition: opacity 0.5s ease;
+      z-index: 2;
     }
 
-    .ml-card:hover::before {
+    .ml-card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.03);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      opacity: 0;
+      transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .ml-card:hover::before,
+    .ml-card:hover::after {
       opacity: 1;
     }
 
     .ml-card:hover {
       border-color: rgba(255, 255, 255, 0.12);
-      background: rgba(255, 255, 255, 0.06);
       transform: translateY(-5px);
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     }
 
     .ml-card-icon {
@@ -784,7 +828,7 @@
       position: relative;
       z-index: 2;
       max-width: 1200px;
-      margin: 0 auto;
+      margin: 8rem auto;
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 4rem;
@@ -968,16 +1012,39 @@
         });
       }
 
+      let mouseTick = false;
       document.addEventListener("mousemove", (e) => {
-        if (document.body.classList.contains("focus-mode-active")) {
-          const centerX = window.innerWidth / 2;
-          const centerY = window.innerHeight * 0.55;
-          const dx = e.clientX - centerX;
-          const dy = e.clientY - centerY;
-          const angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
-          document.body.style.setProperty("--beam-angle", angle);
+        if (!document.body.classList.contains("focus-mode-active")) return;
+        
+        if (!mouseTick) {
+          window.requestAnimationFrame(() => {
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight * 0.55;
+            const dx = e.clientX - centerX;
+            const dy = e.clientY - centerY;
+            const angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
+            document.body.style.setProperty("--beam-angle", angle);
+            mouseTick = false;
+          });
+          mouseTick = true;
         }
-      });
+      }, { passive: true });
+
+      // Spline Visibility Observer
+      if (viewer) {
+        const splineObserver = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              viewer.style.visibility = "visible";
+              viewer.style.display = "block";
+            } else {
+              viewer.style.visibility = "hidden";
+              viewer.style.display = "none";
+            }
+          });
+        }, { threshold: 0 });
+        splineObserver.observe(document.getElementById("hero"));
+      }
     });
   </script>
 </head>
@@ -1009,7 +1076,7 @@
   <main>
     <!-- ============ HERO SECTION ============ -->
     <section class="hero-section" id="hero">
-      <spline-viewer style="pointer-events: none;"
+      <spline-viewer style="pointer-events: none;" loading="lazy"
         url="https://prod.spline.design/ytNb29B-70AARpHr/scene.splinecode"></spline-viewer>
 
       <div class="flashlight-beam"></div>
@@ -1058,54 +1125,55 @@
         </div>
       </div>
 
-      <!-- Scroll Down Indicator -->
-      <a href="#machine-learning" class="scroll-indicator">
-        <span>Scroll</span>
-        <div class="scroll-arrow"></div>
-      </a>
+
     </section>
 
     <!-- ============ MACHINE LEARNING SECTION ============ -->
     <section class="ml-section" id="machine-learning">
+      <!-- Background -->
+      <div class="ml-section-bg"></div>
+      
       <!-- Background Orbs -->
       <div class="ml-bg-orb orb-1"></div>
       <div class="ml-bg-orb orb-2"></div>
       <div class="ml-bg-orb orb-3"></div>
 
-      <!-- Section Header -->
-      <div class="ml-header">
-        <div class="ml-badge">
-          <div class="ml-badge-dot"></div>
-          Machine Learning
-        </div>
-        <h2 class="ml-title">Where Data Becomes<br>Intelligence</h2>
-        <p class="ml-subtitle">Machine learning enables systems to learn from data, identify patterns, and make decisions with minimal human intervention — reshaping every industry on the planet.</p>
-      </div>
-
-      <!-- Feature Cards -->
-      <div class="ml-grid">
-        <div class="ml-card" style="--card-accent: #00f3ff; --card-accent-bg: rgba(0,243,255,0.1); --card-accent-border: rgba(0,243,255,0.15);">
-          <div class="ml-card-icon">
-            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      <div class="ml-container">
+        <!-- Section Header -->
+        <div class="ml-header">
+          <div class="ml-badge">
+            <div class="ml-badge-dot"></div>
+            Machine Learning
           </div>
-          <h3>Supervised Learning</h3>
-          <p>Algorithms learn from labeled training data to map inputs to outputs, enabling precise classification and regression tasks with remarkable accuracy.</p>
+          <h2 class="ml-title">Where Data Becomes<br>Intelligence</h2>
+          <p class="ml-subtitle">Machine learning enables systems to learn from data, identify patterns, and make decisions with minimal human intervention — reshaping every industry on the planet.</p>
         </div>
 
-        <div class="ml-card" style="--card-accent: #b56cff; --card-accent-bg: rgba(181,108,255,0.1); --card-accent-border: rgba(181,108,255,0.15);">
-          <div class="ml-card-icon">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4"/><path d="M12 19v4"/><path d="M4.22 4.22l2.83 2.83"/><path d="M16.95 16.95l2.83 2.83"/><path d="M1 12h4"/><path d="M19 12h4"/><path d="M4.22 19.78l2.83-2.83"/><path d="M16.95 7.05l2.83-2.83"/></svg>
+        <!-- Feature Cards -->
+        <div class="ml-grid">
+          <div class="ml-card" style="--card-accent: #00f3ff; --card-accent-bg: rgba(0,243,255,0.1); --card-accent-border: rgba(0,243,255,0.15);">
+            <div class="ml-card-icon">
+              <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            </div>
+            <h3>Supervised Learning</h3>
+            <p>Algorithms learn from labeled training data to map inputs to outputs, enabling precise classification and regression tasks with remarkable accuracy.</p>
           </div>
-          <h3>Unsupervised Learning</h3>
-          <p>Discovers hidden structures in unlabeled data through clustering and dimensionality reduction, revealing patterns humans might never find.</p>
-        </div>
 
-        <div class="ml-card" style="--card-accent: #ff006e; --card-accent-bg: rgba(255,0,110,0.1); --card-accent-border: rgba(255,0,110,0.15);">
-          <div class="ml-card-icon">
-            <svg viewBox="0 0 24 24"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M9 9l6 6"/><path d="M15 9l-6 6"/></svg>
+          <div class="ml-card" style="--card-accent: #b56cff; --card-accent-bg: rgba(181,108,255,0.1); --card-accent-border: rgba(181,108,255,0.15);">
+            <div class="ml-card-icon">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4"/><path d="M12 19v4"/><path d="M4.22 4.22l2.83 2.83"/><path d="M16.95 16.95l2.83 2.83"/><path d="M1 12h4"/><path d="M19 12h4"/><path d="M4.22 19.78l2.83-2.83"/><path d="M16.95 7.05l2.83-2.83"/></svg>
+            </div>
+            <h3>Unsupervised Learning</h3>
+            <p>Discovers hidden structures in unlabeled data through clustering and dimensionality reduction, revealing patterns humans might never find.</p>
           </div>
-          <h3>Reinforcement Learning</h3>
-          <p>Agents learn optimal strategies through trial, error, and reward signals — the same paradigm behind game-playing AIs and autonomous robotics.</p>
+
+          <div class="ml-card" style="--card-accent: #ff006e; --card-accent-bg: rgba(255,0,110,0.1); --card-accent-border: rgba(255,0,110,0.15);">
+            <div class="ml-card-icon">
+              <svg viewBox="0 0 24 24"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M9 9l6 6"/><path d="M15 9l-6 6"/></svg>
+            </div>
+            <h3>Reinforcement Learning</h3>
+            <p>Agents learn optimal strategies through trial, error, and reward signals — the same paradigm behind game-playing AIs and autonomous robotics.</p>
+          </div>
         </div>
       </div>
 
@@ -1149,7 +1217,10 @@
         });
       }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
 
-      document.querySelectorAll('[data-animate]').forEach(el => observer.observe(el));
+      document.querySelectorAll('.ml-card, .ml-header, .ml-visualization').forEach(el => {
+        el.setAttribute('data-animate', 'fade-up');
+        observer.observe(el);
+      });
 
       // Animated Counter
       function animateCounters() {
@@ -1290,7 +1361,13 @@
         }, { threshold: 0.1 });
 
         canvasObserver.observe(canvas.parentElement);
-        window.addEventListener('resize', () => { if (animId) resize(); });
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+          if (resizeTimeout) clearTimeout(resizeTimeout);
+          resizeTimeout = setTimeout(() => {
+            if (animId) resize();
+          }, 150);
+        }, { passive: true });
       }
     })();
   </script>
