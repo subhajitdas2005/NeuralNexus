@@ -15,11 +15,22 @@
   padding: 0;
 }
 
-body {
-  background-color: var(--bg-color);
+body, html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+  background: var(--bg-color);
   color: var(--text-color);
   font-family: 'Inter', sans-serif;
-  overflow-x: hidden;
+  scroll-behavior: smooth;
+  scroll-snap-type: y proximity;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+body::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
 }
 
 /* Glassmorphism utility */
@@ -31,7 +42,15 @@ body {
   border-radius: 16px;
 }
 
-/* Hide fallback spline logos in react */
-a[href*="spline.design"], #logo {
+/* Hide Spline logos and watermarks */
+#logo,
+a[href*="spline.design"],
+.spline-watermark,
+[class*="spline-watermark"],
+div[style*="position: absolute"][style*="bottom: 10px"],
+div[style*="position: absolute"][style*="bottom: 16px"] {
   display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }

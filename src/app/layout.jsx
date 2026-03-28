@@ -1,4 +1,5 @@
 import "./globals.css";
+import Script from 'next/script';
 
 export const metadata = {
   title: "AI Showcase",
@@ -8,6 +9,13 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
+      <head>
+        <Script 
+          src="https://unpkg.com/@splinetool/viewer@1.0.51/build/spline-viewer.js" 
+          type="module"
+          strategy="beforeInteractive"
+        />
+      </head>
       <body>{children}</body>
     </html>
   );
