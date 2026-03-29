@@ -131,35 +131,47 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  // Enhanced Scroll Observer
-  useEffect(() => {
-    const observerOptions = {
-      threshold: 0,
-      rootMargin: '100px' // Start reveals slightly early for smoothness
-    };
+    // Optimized Cinematic Scroll Management
+    useEffect(() => {
+      const mlSection = document.querySelector('.ml-section');
+      if (!mlSection || !window.matchMedia('(prefers-reduced-motion: no-preference)').matches) return;
 
+      // Instead of manual RAF, we use IntersectionObserver to only toggle activity
+      // The actual motion is now handled by CSS scroll-timelines
+      const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+          mlSection.classList.add('ml-active');
+        } else {
+          mlSection.classList.remove('ml-active');
+        }
+      }, { threshold: 0, rootMargin: '100px' });
+
+      observer.observe(mlSection);
+      return () => observer.disconnect();
+    }, []);
+
+  // Enhanced Scroll Observer for Individual Elements (Bi-directional)
+  useEffect(() => {
     const revealObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
+        // Toggle class based on intersection for bi-directional animation
         if (entry.isIntersecting) {
-          if (!entry.target.classList.contains('reveal-active')) {
-            entry.target.classList.add('reveal-active');
-            entry.target.classList.remove('reveal-hidden');
-          }
+          entry.target.classList.add('reveal-active');
         } else {
-          if (entry.target.classList.contains('reveal-active')) {
-            entry.target.classList.remove('reveal-active');
-            entry.target.classList.add('reveal-hidden');
-          }
+          entry.target.classList.remove('reveal-active');
         }
       });
-    }, observerOptions);
+    }, { 
+      threshold: 0.05,
+      rootMargin: '0px 0px -10% 0px' 
+    });
 
     // Initial setup for staggered elements
     const setupStaggers = () => {
       document.querySelectorAll('.stagger-root').forEach(root => {
-        const children = root.querySelectorAll('[data-reveal]');
+        const children = root.querySelectorAll('[data-reveal], .mask-reveal');
         children.forEach((child, index) => {
-          child.style.setProperty('--reveal-delay', `${index * 80}ms`); // Reduced delay for faster perception
+          child.style.setProperty('--reveal-delay', `${index * 80}ms`); // Reduced delay for snappier feel
         });
       });
     };
@@ -167,11 +179,12 @@ export default function Home() {
     setupStaggers();
     document.querySelectorAll('[data-reveal], .mask-reveal').forEach(el => revealObserver.observe(el));
 
-    // Stop Spline model when not in view (Saves GPU)
+    // Performance: Deep pause of Spline model when not in view
     const heroObserver = new IntersectionObserver((entries) => {
       const splineContainer = document.querySelector('.spline-container');
       if (splineContainer) {
-        splineContainer.style.display = entries[0].isIntersecting ? 'block' : 'none';
+        const isVisible = entries[0].isIntersecting;
+        splineContainer.style.display = isVisible ? 'block' : 'none'; // Better than visibility: hidden
       }
     }, { threshold: 0 });
 
@@ -188,29 +201,42 @@ export default function Home() {
     const statsObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
-          document.querySelectorAll('[data-count]').forEach(el => {
+          entry.target.querySelectorAll('[data-count]').forEach(el => {
+            if (el.dataset.running) return;
+            el.dataset.running = 'true';
+            
             const target = parseFloat(el.getAttribute('data-count'));
             const isFloat = target % 1 !== 0;
-            const duration = 2000;
+            const duration = 1500; // Snappier count
             const start = performance.now();
 
             function update(now) {
               const elapsed = now - start;
               const progress = Math.min(elapsed / duration, 1);
-              const eased = 1 - Math.pow(1 - progress, 3);
+              const eased = 1 - Math.pow(1 - progress, 4); // Quart eased
               const current = eased * target;
               el.textContent = isFloat ? current.toFixed(1) : Math.floor(current);
-              if (progress < 1) requestAnimationFrame(update);
+              if (progress < 1) {
+                requestAnimationFrame(update);
+              } else {
+                delete el.dataset.running;
+              }
             }
             requestAnimationFrame(update);
           });
-          statsObserver.disconnect();
+        } else {
+          // Reset numbers when leaving viewport for bi-directional experience
+          entry.target.querySelectorAll('[data-count]').forEach(el => {
+            el.textContent = '0';
+            delete el.dataset.running;
+          });
         }
       });
-    }, { threshold: 0.5 });
+    }, { threshold: 0.1 });
 
     const statsEl = document.querySelector('.ml-stats');
     if (statsEl) statsObserver.observe(statsEl);
+    return () => statsObserver.disconnect();
   }, []);
 
   // Neural Network Canvas
@@ -415,12 +441,12 @@ export default function Home() {
                 <div className="ml-badge-dot"></div>
                 Machine Learning
               </div>
-              <h2 className="ml-title mask-reveal">Where Data Becomes<br />Intelligence</h2>
+              <h2 className="ml-title" data-reveal="up">Where Data Becomes <br />Intelligence</h2>
               <p className="ml-subtitle" data-reveal="up">Machine learning enables systems to learn from data, identify patterns, and make decisions with minimal human intervention — reshaping every industry on the planet.</p>
             </div>
 
             <div className="ml-grid stagger-root">
-              <div className="ml-card" data-reveal="up" style={{ '--card-accent': '#00f3ff', '--card-accent-bg': 'rgba(0,243,255,0.1)', '--card-accent-border': 'rgba(0,243,255,0.15)' }}>
+              <div className="ml-card" data-reveal="magnetic-up" style={{ '--card-accent': '#00f3ff', '--card-accent-bg': 'rgba(0,243,255,0.1)', '--card-accent-border': 'rgba(0,243,255,0.15)' }}>
                 <div className="ml-card-icon">
                   <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" /></svg>
                 </div>
@@ -428,7 +454,7 @@ export default function Home() {
                 <p>Algorithms learn from labeled training data to map inputs to outputs, enabling precise classification and regression tasks with remarkable accuracy.</p>
               </div>
 
-              <div className="ml-card" data-reveal="up" style={{ '--card-accent': '#b56cff', '--card-accent-bg': 'rgba(181,108,255,0.1)', '--card-accent-border': 'rgba(181,108,255,0.15)' }}>
+              <div className="ml-card" data-reveal="magnetic-up" style={{ '--card-accent': '#b56cff', '--card-accent-bg': 'rgba(181,108,255,0.1)', '--card-accent-border': 'rgba(181,108,255,0.15)' }}>
                 <div className="ml-card-icon">
                   <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M12 1v4" /><path d="M12 19v4" /><path d="M4.22 4.22l2.83 2.83" /><path d="M16.95 16.95l2.83 2.83" /><path d="M1 12h4" /><path d="M19 12h4" /><path d="M4.22 19.78l2.83-2.83" /><path d="M16.95 7.05l2.83-2.83" /></svg>
                 </div>
@@ -436,7 +462,7 @@ export default function Home() {
                 <p>Discovers hidden structures in unlabeled data through clustering and dimensionality reduction, revealing patterns humans might never find.</p>
               </div>
 
-              <div className="ml-card" data-reveal="up" style={{ '--card-accent': '#ff006e', '--card-accent-bg': 'rgba(255,0,110,0.1)', '--card-accent-border': 'rgba(255,0,110,0.15)' }}>
+              <div className="ml-card" data-reveal="magnetic-up" style={{ '--card-accent': '#ff006e', '--card-accent-bg': 'rgba(255,0,110,0.1)', '--card-accent-border': 'rgba(255,0,110,0.15)' }}>
                 <div className="ml-card-icon">
                   <svg viewBox="0 0 24 24"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" /><path d="M9 9l6 6" /><path d="M15 9l-6 6" /></svg>
                 </div>

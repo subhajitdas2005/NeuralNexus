@@ -124,29 +124,43 @@ spline-viewer {
   to { opacity: 1; transform: translateY(0); filter: blur(0); }
 }
 
-/* === ENHANCED SCROLL ANIMATIONS === */
+/* Cinematic Reveal: Data Assembling Effect */
 [data-reveal] {
   opacity: 0;
-  will-change: transform, opacity, filter;
+  will-change: transform, opacity;
   backface-visibility: hidden;
   transform: translate3d(0, 0, 0); 
-  contain: paint; /* Isolate rendering */
-  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), 
-              transform 0.8s cubic-bezier(0.16, 1, 0.3, 1),
-              filter 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.8s cubic-bezier(0.2, 0.8, 0.2, 1), 
+              transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1),
+              filter 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-/* Default: Fade Up */
-[data-reveal="up"] { transform: translate3d(0, 30px, 0); }
-[data-reveal="down"] { transform: translate3d(0, -30px, 0); }
-[data-reveal="left"] { transform: translate3d(30px, 0, 0); }
-[data-reveal="right"] { transform: translate3d(-30px, 0, 0); }
-[data-reveal="scale"] { transform: scale(0.95); }
-
+[data-reveal="up"] { 
+  transform: translate3d(0, 30px, 0); 
+  filter: blur(4px);
+}
+[data-reveal="scale"] { 
+  transform: scale(0.94) translate3d(0, 0, 0); 
+  filter: blur(4px);
+}
+[data-reveal="right"] {
+  transform: translate3d(40px, 0, 0);
+  filter: blur(8px);
+}
 [data-reveal].reveal-active {
   opacity: 1;
-  transform: translate3d(0, 0, 0) scale(1);
-  filter: blur(0);
+  transform: translate3d(0, 0, 0) scale(1) rotateX(0);
+  filter: blur(0) brightness(1);
+}
+
+/* Cinematic Multi-Directional Reveal */
+[data-reveal="up"] { 
+  transform: translate3d(0, 60px, 0) scale(0.96); 
+  filter: blur(8px);
+}
+[data-reveal="down"] { 
+  transform: translate3d(0, -60px, 0) scale(0.96); 
+  filter: blur(8px);
 }
 
 /* Specific Stagger Delays */
@@ -161,24 +175,36 @@ spline-viewer {
 
 /* Accessibility: Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
-  [data-reveal], .mask-reveal {
+  [data-reveal], .mask-reveal, .ml-bg-orb, .ml-section::before, .ml-card, .ml-neural-canvas {
     transition: none !important;
     opacity: 1 !important;
     transform: none !important;
     filter: none !important;
     clip-path: none !important;
+    animation: none !important;
+    will-change: auto !important;
+  }
+
+  .ml-header, .ml-grid {
+    opacity: 1 !important;
   }
 }
 
 /* Premium Mask Reveal */
 .mask-reveal {
-  clip-path: inset(0 0 100% 0);
-  transition: clip-path 1.2s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: clip-path;
+  clip-path: inset(100% 0 0 0);
+  opacity: 0;
+  transform: translateY(40px) scale(0.98);
+  transition: clip-path 1.2s cubic-bezier(0.19, 1, 0.22, 1),
+              opacity 1.2s cubic-bezier(0.19, 1, 0.22, 1),
+              transform 1.2s cubic-bezier(0.19, 1, 0.22, 1);
+  will-change: clip-path, opacity, transform;
 }
 
 .mask-reveal.reveal-active {
   clip-path: inset(0 0 0 0);
+  opacity: 1;
+  transform: translateY(0) scale(1);
 }
 
 /* Liquid Glare Effect Classes */
@@ -502,6 +528,7 @@ body.focus-mode-active .focus-mode-btn {
   z-index: 1;
   scroll-snap-align: start;
   scroll-margin-top: 2px;
+  contain: paint; /* Isolate rendering */
 }
 
 .ml-container {
@@ -540,20 +567,31 @@ body.focus-mode-active .focus-mode-btn {
   pointer-events: none;
 }
 
-/* Animated grid background */
+/* Cinematic Parallax Grid */
 .ml-section::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  top: -20%;
+  left: -10%;
+  width: 120%;
+  height: 140%;
   background-image:
-    linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
-  background-size: 60px 60px;
-  animation: gridPulse 8s ease-in-out infinite;
+    linear-gradient(rgba(0, 243, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 243, 255, 0.04) 1px, transparent 1px);
+  background-size: 80px 80px;
   pointer-events: none;
+  will-change: transform;
+  z-index: 0;
+  
+  /* Hardware-Accelerated Parallax via Scroll Timeline */
+  animation: grid-parallax linear both;
+  animation-timeline: view();
+  animation-range: entry 0% exit 100%;
+}
+
+@keyframes grid-parallax {
+  0% { transform: translate3d(0, -60px, 0); }
+  100% { transform: translate3d(0, 60px, 0); }
 }
 
 @keyframes gridPulse {
@@ -561,49 +599,43 @@ body.focus-mode-active .focus-mode-btn {
   50% { opacity: 1; }
 }
 
-/* Floating orbs background decoration */
+/* Parallax-Ready Orbs (Managed by JS variables for 3D depth) */
 .ml-bg-orb {
   position: absolute;
   border-radius: 50%;
   filter: blur(60px); /* Reduced blur for performance */
-  opacity: 0.12; /* Reduced opacity */
+  opacity: 0.12;
   pointer-events: none;
-  animation: orbFloat 12s ease-in-out infinite;
   will-change: transform;
-  transform: translate3d(0, 0, 0); 
+  animation: orb-parallax linear both;
+  animation-timeline: view();
+  animation-range: entry 0% exit 100%;
+}
+
+@keyframes orb-parallax {
+  0% { transform: translate3d(0, calc(var(--parallax-offset, 40px) * -1), 0); }
+  100% { transform: translate3d(0, var(--parallax-offset, 40px), 0); }
 }
 
 .ml-bg-orb.orb-1 {
-  width: 400px;
-  height: 400px;
-  background: #6c00ff;
-  top: 10%;
-  right: -5%;
-  animation-delay: 0s;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, #6c00ff 0%, transparent 70%);
+  top: -10%; right: -10%;
+  --parallax-offset: 80px;
 }
 
 .ml-bg-orb.orb-2 {
-  width: 250px; /* Reduced side */
-  height: 250px;
-  background: #00f3ff;
-  bottom: 15%;
-  left: -5%;
-  animation-delay: -4s;
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, #00f3ff 0%, transparent 70%);
+  bottom: 5%; left: -10%;
+  --parallax-offset: -60px;
 }
 
 .ml-bg-orb.orb-3 {
-  width: 250px;
-  height: 250px;
-  background: #ff006e;
-  top: 50%;
-  left: 40%;
-  animation-delay: -8s;
-}
-
-@keyframes orbFloat {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(30px, -20px) scale(1.1); }
-  66% { transform: translate(-20px, 20px) scale(0.9); }
+  width: 350px; height: 350px;
+  background: radial-gradient(circle, #ff006e 0%, transparent 70%);
+  top: 40%; left: 35%;
+  --parallax-offset: 40px;
 }
 
 /* Section Header */
@@ -640,24 +672,40 @@ body.focus-mode-active .focus-mode-btn {
 }
 
 .ml-title {
-  font-size: 4rem;
+  font-size: clamp(2.5rem, 8vw, 4rem);
   font-weight: 200;
   letter-spacing: -1.5px;
-  line-height: 1.15;
+  line-height: 1.1;
   margin: 0 0 1.5rem;
+  color: #ffffff;
   background: linear-gradient(135deg, #ffffff 0%, #b8b8ff 50%, #00f3ff 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+  display: block;
+  min-height: 1.2em;
+  will-change: transform, opacity;
+  transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ml-title.reveal-active {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .ml-subtitle {
   font-size: 1.15rem;
   font-weight: 300;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.6);
   max-width: 600px;
   margin: 0 auto;
   line-height: 1.7;
+  transition: all 1s cubic-bezier(0.16, 1, 0.3, 1) 0.1s;
+}
+
+.ml-subtitle.reveal-active {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* Feature Cards Grid */
@@ -672,18 +720,21 @@ body.focus-mode-active .focus-mode-btn {
 }
 
 .ml-card {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(12px); /* Slightly reduced blur */
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(12px); /* Slightly reduced for mobile perf */
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 20px;
-  padding: 2.5rem 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 24px;
+  padding: 3rem 2.2rem;
   position: relative;
   overflow: hidden;
-  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), 
-              border-color 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: transform, backdrop-filter;
-  transform: translate3d(0, 0, 0);
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), 
+              border-color 0.4s ease,
+              background 0.4s ease,
+              box-shadow 0.4s ease;
+  will-change: transform;
+  transform: translate3d(0, 0, 0); 
+  backface-visibility: hidden;
   z-index: 1;
 }
 
@@ -726,8 +777,10 @@ body.focus-mode-active .focus-mode-btn {
 }
 
 .ml-card:hover {
-  border-color: rgba(255, 255, 255, 0.12);
-  transform: translateY(-5px);
+  border-color: rgba(0, 243, 255, 0.3);
+  transform: translate3d(0, -8px, 0) scale(1.02);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(0, 243, 255, 0.1);
 }
 
 .ml-card-icon {
@@ -863,16 +916,30 @@ a, button, [role="button"], .interactive-text, .focus-mode-btn {
   }
 }
 
-/* Neural Canvas */
+/* Neural Canvas Presentation */
 .ml-neural-canvas {
   position: relative;
   width: 100%;
-  aspect-ratio: 1;
+  aspect-ratio: 1.1;
+  background: radial-gradient(circle at center, rgba(31, 1, 61, 0.2) 0%, transparent 70%);
+  border-radius: 50%;
+  will-change: transform, opacity;
+  
+  /* Use scroll timeline for cinematic scale pulse */
+  animation: viz-pulse linear both;
+  animation-timeline: view();
+  animation-range: entry 0% exit 100%;
+}
+
+@keyframes viz-pulse {
+  0%, 100% { transform: scale(0.92); }
+  50% { transform: scale(1.02); }
 }
 
 .ml-neural-canvas canvas {
   width: 100%;
   height: 100%;
+  filter: drop-shadow(0 0 30px rgba(0, 243, 255, 0.15));
 }
 
 /* Removed old scroll animation logic in favor of [data-reveal] system */
