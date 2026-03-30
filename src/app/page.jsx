@@ -131,24 +131,24 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-    // Optimized Cinematic Scroll Management
-    useEffect(() => {
-      const mlSection = document.querySelector('.ml-section');
-      if (!mlSection || !window.matchMedia('(prefers-reduced-motion: no-preference)').matches) return;
+  // Optimized Cinematic Scroll Management
+  useEffect(() => {
+    const sections = document.querySelectorAll('.ml-section, .nn-section');
+    if (!sections.length || !window.matchMedia('(prefers-reduced-motion: no-preference)').matches) return;
 
-      // Instead of manual RAF, we use IntersectionObserver to only toggle activity
-      // The actual motion is now handled by CSS scroll-timelines
-      const observer = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting) {
-          mlSection.classList.add('ml-active');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('active');
         } else {
-          mlSection.classList.remove('ml-active');
+          entry.target.classList.remove('active');
         }
-      }, { threshold: 0, rootMargin: '100px' });
+      });
+    }, { threshold: 0, rootMargin: '100px' });
 
-      observer.observe(mlSection);
-      return () => observer.disconnect();
-    }, []);
+    sections.forEach(s => observer.observe(s));
+    return () => observer.disconnect();
+  }, []);
 
   // Enhanced Scroll Observer for Individual Elements (Bi-directional)
   useEffect(() => {
@@ -471,6 +471,12 @@ export default function Home() {
               </div>
             </div>
           </div>
+        </section>
+
+        <section className="nn-section" id="neural-networks">
+          <div className="ml-section-bg"></div>
+          <div className="ml-bg-orb orb-1"></div>
+          <div className="ml-bg-orb orb-4"></div>
 
           <div className="ml-visualization" data-reveal="up">
             <div className="ml-viz-content stagger-root">
