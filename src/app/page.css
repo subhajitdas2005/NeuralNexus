@@ -124,6 +124,11 @@ spline-viewer {
   to { opacity: 1; transform: translateY(0); filter: blur(0); }
 }
 
+@keyframes fadeInMobile {
+  from { opacity: 0; transform: translate3d(-50%, 15px, 0); filter: blur(4px); }
+  to { opacity: 1; transform: translate3d(-50%, 0, 0); filter: blur(0); }
+}
+
 /* Cinematic Reveal: Data Assembling Effect */
 [data-reveal] {
   opacity: 0;
@@ -375,10 +380,21 @@ body.focus-mode-active .focus-mode-btn {
   50% { transform: translate3d(0, calc(-50% - 15px), 0); }
 }
 
+:root {
+  --status-h: 1rem;
+}
+
+@media (max-width: 640px) {
+  :root {
+    --status-h: 0.8rem;
+  }
+}
+
 .rotating-text-wrapper {
-  height: 1rem;
-  overflow: hidden;
+  height: var(--status-h);
+  overflow: hidden !important;
   margin-top: 0.2rem;
+  contain: paint;
 }
 
 .rotating-text {
@@ -388,7 +404,7 @@ body.focus-mode-active .focus-mode-btn {
 }
 
 .rotating-text span {
-  height: 1rem;
+  height: var(--status-h);
   display: flex;
   align-items: center;
   font-family: monospace;
@@ -399,10 +415,10 @@ body.focus-mode-active .focus-mode-btn {
 
 @keyframes rotateText {
   0%, 20% { transform: translateY(0); }
-  25%, 45% { transform: translateY(-1rem); }
-  50%, 70% { transform: translateY(-2rem); }
-  75%, 95% { transform: translateY(-3rem); }
-  100% { transform: translateY(-4rem); }
+  25%, 45% { transform: translateY(calc(var(--status-h) * -1)); }
+  50%, 70% { transform: translateY(calc(var(--status-h) * -2)); }
+  75%, 95% { transform: translateY(calc(var(--status-h) * -3)); }
+  100% { transform: translateY(calc(var(--status-h) * -4)); }
 }
 
 /* Loading Screen Styles */
@@ -960,6 +976,25 @@ a, button, [role="button"], .interactive-text, .focus-mode-btn {
 
 /* Responsive */
 @media (max-width: 1024px) {
+  .minimal-header {
+    padding: 1.5rem 2rem;
+    gap: 2rem;
+    top: 2.5rem; /* Slightly more upward for tablet */
+  }
+  .hero-text-container {
+    left: 7%;
+    max-width: 500px;
+  }
+  .minimal-heading {
+    font-size: 3.5rem;
+  }
+  .system-status {
+    right: 5%;
+    padding: 1rem 1.4rem;
+  }
+  .focus-mode-btn {
+    display: none; /* Removed for tablets as requested */
+  }
   .ml-grid {
     grid-template-columns: 1fr;
     max-width: 500px;
@@ -980,10 +1015,119 @@ a, button, [role="button"], .interactive-text, .focus-mode-btn {
 }
 
 @media (max-width: 640px) {
+  .minimal-header {
+    padding: 0.5rem 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.8rem 1.2rem;
+    top: 1.8rem; /* Final subtle upward shift from 2.2rem */
+  }
+  .minimal-header a {
+    font-size: 0.8rem;
+  }
+  .minimal-header a:not(:first-child)::before {
+    display: none;
+  }
+  
+  /* Horizontal centering fix for the Spline robot model */
+  .spline-container spline-viewer {
+    width: 110% !important; /* Increased width to cover the gap caused by translateX */
+    transform: translateX(-8.8%); /* Final subtle shift to the left for perfect visual balance */
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .hero-text-container {
+    left: 0;
+    width: 100%;
+    max-width: 100%;
+    text-align: center;
+    padding: 0 1.5rem;
+    top: 28%; /* Shifted slightly upward from 32% for optimal mobile balance */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .minimal-heading {
+    font-size: 2.2rem; /* Reduced from 2.8rem */
+    margin-bottom: 1rem;
+    line-height: 1.2;
+  }
+  .minimal-subtext {
+    font-size: 0.95rem; /* Reduced from 1.1rem */
+    margin: 0 auto;
+    max-width: 280px;
+  }
+  .system-status {
+    left: 50%;
+    top: auto; /* REMOVE DESKTOP CENTER-LOCK */
+    right: auto;
+    bottom: 4%; /* Move to bottom as requested */
+    transform: translateX(-50%);
+    animation: fadeInMobile 1.2s ease-out 0.8s forwards;
+    padding: 0.6rem 1.2rem;
+    width: fit-content;
+    min-width: 220px;
+    max-width: 85%;
+    max-height: 100px; 
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    text-align: center;
+    justify-content: center;
+    backdrop-filter: blur(15px);
+  }
+
+  .system-status .status-text {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  .system-status .status-label {
+    font-size: 0.65rem;
+  }
+
+  .system-status .status-value {
+    font-size: 0.85rem;
+  }
+
+  .system-status .rotating-text-wrapper {
+    height: var(--status-h);
+    max-height: var(--status-h);
+    overflow: hidden !important;
+    margin-top: 0;
+    flex-shrink: 0;
+  }
+
+  .system-status .rotating-text span {
+    height: var(--status-h);
+    font-size: 0.7rem;
+    justify-content: center;
+  }
+  .focus-mode-btn {
+    display: none; /* Removed for mobile as requested */
+  }
+
+  /* Disable Focus Mode visual effects (mask/flashlight) on mobile/tablet viewports */
+  body.focus-mode-active .flashlight-beam,
+  body.focus-mode-active .ui-layer {
+    display: none !important;
+    mask-image: none !important;
+    -webkit-mask-image: none !important;
+  }
   .ml-title {
     font-size: 2rem;
   }
   .ml-viz-title {
     font-size: 1.8rem;
+  }
+  .decryptor-text {
+    font-size: 1.5rem;
+    min-width: 280px;
+    letter-spacing: 4px;
   }
 }
