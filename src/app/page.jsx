@@ -563,7 +563,9 @@ export default function Home() {
       <div id="loader-wrapper" className={isLoaded ? 'hidden' : ''}>
         <div className="decryptor-container">
           <div className={`decryptor-text ${isLoaded ? 'locked' : ''}`}>{targetText}</div>
-          <div className="decryptor-subtext">ESTABLISHING NEURAL LINK...</div>
+          <div className="decryptor-subtext">
+            {isLoaded ? 'WELCOME TO NEURAL NEXUS' : 'ESTABLISHING NEURAL LINK...'}
+          </div>
         </div>
       </div>
       <main>
