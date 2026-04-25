@@ -18,7 +18,311 @@ const planetsData = [
   { id: 'code', name: 'Code', rx: 520, ry: 240, dur: 28, color: '#ffcc00', icon: <><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></> }
 ];
 
-function GenerativeAISection() {
+function Typewriter({ text, speed = 30, delay = 0 }) {
+  const [displayedText, setDisplayedText] = useState("");
+  const [isFinished, setIsFinished] = useState(false);
+
+  useEffect(() => {
+    setDisplayedText("");
+    setIsFinished(false);
+
+    let timeout;
+    const startTyping = () => {
+      let i = 0;
+      const type = () => {
+        if (i < text.length) {
+          setDisplayedText(text.substring(0, i + 1));
+          i++;
+          timeout = setTimeout(type, speed);
+        } else {
+          setIsFinished(true);
+        }
+      };
+      type();
+    };
+
+    const initialDelay = setTimeout(startTyping, delay);
+    return () => {
+      clearTimeout(initialDelay);
+      clearTimeout(timeout);
+    };
+  }, [text, speed, delay]);
+
+  return (
+    <span className="typewriter-container">
+      {displayedText}
+      {!isFinished && <span className="typewriter-cursor">|</span>}
+    </span>
+  );
+}
+
+function VoiceGenerator({ text, color }) {
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [heights, setHeights] = useState(Array(40).fill(1));
+  const requestRef = useRef();
+
+  const animate = () => {
+    if (isSpeaking) {
+      setHeights(prev => prev.map(() => 0.5 + Math.random() * 2));
+      requestRef.current = requestAnimationFrame(animate);
+    } else {
+      setHeights(Array(40).fill(1));
+    }
+  };
+
+  useEffect(() => {
+    if (isSpeaking) {
+      requestRef.current = requestAnimationFrame(animate);
+    } else {
+      cancelAnimationFrame(requestRef.current);
+      setHeights(Array(40).fill(1));
+    }
+    return () => cancelAnimationFrame(requestRef.current);
+  }, [isSpeaking]);
+
+  const speak = () => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+    
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    utterance.pitch = 0.5; 
+    utterance.rate = 0.85;
+    utterance.volume = 1;
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(speak, 800);
+    return () => {
+      window.speechSynthesis.cancel();
+      clearTimeout(timer);
+    };
+  }, [text]);
+
+  return (
+    <>
+      <div className="voice-generator-container full-area">
+        <div className={`waveform-visualizer ${isSpeaking ? 'is-speaking' : ''}`} style={{ '--wave-color': color }}>
+          {heights.map((h, i) => (
+            <div 
+              key={i} 
+              className="wave-line" 
+              style={{ 
+                '--idx': i,
+                transform: `scaleY(${isSpeaking ? h : 1})`,
+                opacity: isSpeaking ? 0.4 + (h * 0.3) : 0.2
+              }}
+            ></div>
+          ))}
+        </div>
+      </div>
+      <button className="voice-action-btn outside-btn" onClick={speak} style={{ '--btn-color': color }}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" /></svg>
+        Replay Audio Synthesis
+      </button>
+    </>
+  );
+}
+
+function VisualGenerator({ text, color, fontSize = "5rem" }) {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    let interval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          return 100;
+        }
+        return prev + 1;
+      });
+    }, 30);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="visual-generator-container">
+      <div className="visual-canvas">
+        <div className="noise-overlay" style={{ opacity: 1 - progress / 100 }}></div>
+        <div className="resolved-content" style={{ opacity: progress / 100, color: color, fontSize: fontSize }}>
+          {text}
+        </div>
+        <div className="scan-line"></div>
+      </div>
+      <div className="gen-progress-bar">
+        <div className="gen-progress-fill" style={{ width: `${progress}%`, background: color }}></div>
+      </div>
+      <div className="gen-stats">
+        <span>SAMPLING: {progress}%</span>
+        <span>LATENT SPACE: RESOLVING</span>
+      </div>
+    </div>
+  );
+}
+
+function VideoGenerator({ color }) {
+  const [progress, setProgress] = useState(0);
+  const [isResolved, setIsResolved] = useState(false);
+  const [activeFrame, setActiveFrame] = useState(0);
+  const totalFrames = 24;
+
+  useEffect(() => {
+    let interval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setIsResolved(true);
+          return 100;
+        }
+        return prev + 1;
+      });
+    }, 30);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (isResolved) {
+      let frameInterval = setInterval(() => {
+        setActiveFrame(prev => (prev + 1) % totalFrames);
+      }, 50);
+      return () => clearInterval(frameInterval);
+    } else {
+       let frameInterval = setInterval(() => {
+        setActiveFrame(prev => (prev + 1) % totalFrames);
+      }, 100);
+      return () => clearInterval(frameInterval);
+    }
+  }, [isResolved, totalFrames]);
+
+  const progressRatio = activeFrame / (totalFrames - 1 || 1);
+  // Starts off-screen left (-350px) and moves to off-screen right (+350px)
+  const xPos = -350 + (progressRatio * 700);
+  // Bounces 4 times across the screen
+  const yPos = -Math.abs(Math.sin(progressRatio * Math.PI * 4)) * 60;
+
+  return (
+    <div className="video-generator-container">
+      <div className="video-main-screen" style={{ '--theme-color': color }}>
+        <div className="video-overlay" style={{ opacity: isResolved ? 0 : 0.8 }}></div>
+        <div className="video-content" style={{ opacity: isResolved ? 1 : 0.3 }}>
+           <div className="animated-subject" style={{ 
+             transform: `translate(${xPos}px, ${yPos}px) scale(${1 + (yPos / -60) * 0.2})`,
+             transition: activeFrame === 0 ? 'none' : 'transform 0.05s linear'
+           }}>
+             <div className="subject-core" style={{ background: color, boxShadow: `0 0 20px ${color}` }}></div>
+             <div className="subject-ring" style={{ borderColor: color }}></div>
+           </div>
+        </div>
+        {!isResolved && (
+          <div className="rendering-status">
+            <span>GENERATING TENSORS</span>
+            <div className="loading-bar">
+              <div className="loading-fill" style={{ width: `${progress}%`, background: color }}></div>
+            </div>
+          </div>
+        )}
+      </div>
+      
+      <div className="video-timeline">
+        {Array.from({ length: totalFrames }).map((_, idx) => {
+          const idxRatio = idx / (totalFrames - 1 || 1);
+          const dotY = -Math.abs(Math.sin(idxRatio * Math.PI * 3)) * 10;
+          return (
+            <div 
+              key={idx} 
+              className={`timeline-frame ${activeFrame === idx ? 'active' : ''}`}
+              style={{ 
+                '--frame-color': color,
+                borderColor: activeFrame === idx ? color : 'rgba(255, 255, 255, 0.1)',
+                background: activeFrame === idx ? `${color}20` : 'transparent'
+              }}
+            >
+              <div className="frame-inner" style={{ opacity: isResolved ? 1 : 0.2 }}>
+                 <div className="frame-dot" style={{ 
+                   transform: `translateY(${dotY}px)`,
+                   background: color 
+                 }}></div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function CodeGenerator({ color }) {
+  const codeLines = [
+    "export class AIGenerator {",
+    "  public async generate(prompt: string) {",
+    "    const tensor = Neural.encode(prompt);",
+    "    const logic = await Core.predict(tensor);",
+    "    return Decoder.parse(logic);",
+    "  }",
+    "}"
+  ];
+
+  const [visibleLines, setVisibleLines] = useState(0);
+  const [currentChars, setCurrentChars] = useState(0);
+  const [isDone, setIsDone] = useState(false);
+
+  useEffect(() => {
+    if (isDone) return;
+
+    let timeout;
+    if (visibleLines < codeLines.length) {
+      const currentLine = codeLines[visibleLines];
+      if (currentChars < currentLine.length) {
+        timeout = setTimeout(() => {
+          setCurrentChars(prev => prev + 1);
+        }, 15);
+      } else {
+        timeout = setTimeout(() => {
+          setVisibleLines(prev => prev + 1);
+          setCurrentChars(0);
+        }, 80);
+      }
+    } else {
+      setIsDone(true);
+    }
+
+    return () => clearTimeout(timeout);
+  }, [visibleLines, currentChars, isDone, codeLines]);
+
+  return (
+    <div className="code-generator-container">
+      <div className="code-window">
+        <div className="code-content" style={{ '--theme-color': color }}>
+          {codeLines.map((line, idx) => {
+            if (idx > visibleLines) return null;
+            
+            const isCurrentLine = idx === visibleLines;
+            const textToShow = isCurrentLine ? line.substring(0, currentChars) : line;
+            
+            return (
+              <div key={idx} className="code-line">
+                <span className="line-number">{idx + 1}</span>
+                <span className="line-text">
+                  {textToShow}
+                  {isCurrentLine && !isDone && <span className="code-cursor">|</span>}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+function GenerativeAISection({ isLoaded }) {
   const containerRef = useRef(null);
   const coreRef = useRef(null);
   const planetsRef = useRef([]);
@@ -28,15 +332,15 @@ function GenerativeAISection() {
   const animationsRef = useRef({});
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || !isLoaded) return;
+
+    // Manually trigger reveal for headers to be ready before visiting
+    containerRef.current.querySelectorAll('[data-reveal]').forEach(el => {
+      el.classList.add('reveal-active');
+    });
+
     const ctx = gsap.context(() => {
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: containerRef.current,
-          start: "top 95%",
-          once: true
-        }
-      });
+      const tl = gsap.timeline();
 
       gsap.set(planetsRef.current, { scale: 0 });
       gsap.set(coreRef.current, { scale: 0 });
@@ -69,7 +373,7 @@ function GenerativeAISection() {
         }, "-=0.8");
     }, containerRef);
     return () => ctx.revert();
-  }, []);
+  }, [isLoaded]);
 
   useEffect(() => {
     planetsData.forEach((planet) => {
@@ -92,11 +396,56 @@ function GenerativeAISection() {
 
   const getArtifactContent = (id) => {
     switch (id) {
-      case 'text': return <div className="artifact-text">Generating narrative structure...<br />&gt; Analyzing context<br />&gt; Synthesizing language model</div>;
-      case 'image': return <div className="artifact-image"><div className="noise-overlay"></div><p>Rendering visual latent space...</p></div>;
-      case 'audio': return <div className="artifact-audio"><div className="waveform"></div><p>Synthesizing audio frequencies...</p></div>;
-      case 'video': return <div className="artifact-video"><div className="video-frames"></div><p>Generating temporal sequences...</p></div>;
-      case 'code': return <div className="artifact-code"><code>function synthesize() &#123;<br />  return AI.generate('future');<br />&#125;</code></div>;
+      case 'text': return (
+        <div className="artifact-text">
+          <p style={{ marginBottom: '1rem' }}>
+            <Typewriter text="USER: How do you generate text?" speed={30} />
+          </p>
+          <p style={{ color: '#00f3ff', lineHeight: '1.8' }}>
+            <Typewriter text="AI: I analyze the context of your request and navigate a multi-dimensional map of language to find the most coherent path forward. Every letter you see is a mathematical prediction." speed={30} delay={1500} />
+          </p>
+        </div>
+      );
+      case 'image': return (
+        <div className="artifact-image">
+          <VisualGenerator text="HELLO WORLD" color="#b56cff" fontSize="2.5rem" />
+          <p style={{ marginTop: '1rem' }}>
+            <Typewriter text="Converting noise to semantic structure..." speed={40} />
+            <br />
+            <Typewriter text="> Denoising diffusion process active" speed={40} delay={1500} />
+          </p>
+        </div>
+      );
+      case 'audio': return (
+        <div className="artifact-audio">
+          <VoiceGenerator text="Welcome to the Neural Nexus. I am the voice of the architecture. I translate complex data into the frequencies of human understanding." color="#ff006e" />
+          <p style={{ marginTop: '1.5rem' }}>
+            <Typewriter text="Frequency modulation in progress..." speed={40} />
+            <br />
+            <Typewriter text="> Adaptive vocoder active" speed={40} delay={1500} />
+          </p>
+        </div>
+      );
+      case 'video': return (
+        <div className="artifact-video">
+          <VideoGenerator color="#00ffcc" />
+          <p style={{ marginTop: '1.5rem' }}>
+            <Typewriter text="Synthesizing temporal sequences..." speed={40} />
+            <br />
+            <Typewriter text="> Frame interpolation active" speed={40} delay={1500} />
+          </p>
+        </div>
+      );
+      case 'code': return (
+        <div className="artifact-code">
+          <CodeGenerator color="#ffcc00" />
+          <p style={{ marginTop: '1.5rem' }}>
+            <Typewriter text="Compiling logic pathways..." speed={40} />
+            <br />
+            <Typewriter text="> Syntax optimized" speed={40} delay={3000} />
+          </p>
+        </div>
+      );
       default: return null;
     }
   };
@@ -104,6 +453,7 @@ function GenerativeAISection() {
   return (
     <section className="gen-ai-section" id="generative-ai" ref={containerRef}>
       <div className="ml-section-bg"></div>
+      <div className="galactic-nebula"></div>
       <div className="stars-bg"></div>
 
       <div className="gen-ai-header stagger-root">
@@ -128,6 +478,7 @@ function GenerativeAISection() {
               ref={el => pathsRef.current[i] = el}
               d={`M 600,${300 - planet.ry} A ${planet.rx},${planet.ry} 0 1,0 600,${300 + planet.ry} A ${planet.rx},${planet.ry} 0 1,0 600,${300 - planet.ry}`}
               className={`orbit-path ${hoveredModality === planet.id ? 'highlighted' : ''}`}
+              style={{ '--orbit-color': planet.color }}
             />
           ))}
         </svg>
@@ -1010,7 +1361,7 @@ export default function Home() {
           </div>
         </section>
 
-        <GenerativeAISection />
+        <GenerativeAISection isLoaded={isLoaded} />
       </main>
     </>
   );
