@@ -1,6 +1,12 @@
 import "./globals.css";
 import Script from 'next/script';
-import { Jersey_25, Quantico, Anta, Aldrich, Space_Grotesk } from 'next/font/google';
+import { Jersey_25, Quantico, Anta, Aldrich, Space_Grotesk, Michroma, Outfit } from 'next/font/google';
+
+const michroma = Michroma({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-michroma',
+});
 
 const jersey25 = Jersey_25({
   weight: '400',
@@ -30,6 +36,11 @@ const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
   variable: '--font-space-grotesk',
 });
+const outfit = Outfit({
+  subsets: ['latin'],
+  weight: ['300', '400', '800'],
+  variable: '--font-outfit',
+});
 
 export const metadata = {
   title: "AI Showcase",
@@ -38,10 +49,10 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${jersey25.variable} ${quantico.variable} ${anta.variable} ${aldrich.variable} ${spaceGrotesk.variable}`}>
+    <html lang="en" className={`${jersey25.variable} ${quantico.variable} ${anta.variable} ${aldrich.variable} ${spaceGrotesk.variable} ${michroma.variable} ${outfit.variable}`}>
       <head>
-        <Script 
-          src="https://unpkg.com/@splinetool/viewer@1.0.51/build/spline-viewer.js" 
+        <Script
+          src="https://unpkg.com/@splinetool/viewer@1.0.51/build/spline-viewer.js"
           type="module"
           strategy="beforeInteractive"
         />

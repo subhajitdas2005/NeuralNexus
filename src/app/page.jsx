@@ -10,12 +10,13 @@ if (typeof window !== "undefined") {
   gsap.registerPlugin(MotionPathPlugin, ScrollTrigger);
 }
 
+const ORBIT_RATIO = 0.44;
 const planetsData = [
-  { id: 'text', name: 'Text', rx: 200, ry: 80, dur: 12, color: '#00f3ff', icon: <path d="M4 6h16M4 12h16M4 18h10" /> },
-  { id: 'image', name: 'Image', rx: 280, ry: 120, dur: 16, color: '#b56cff', icon: <path d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM21 15l-5-5L5 21" /> },
-  { id: 'audio', name: 'Audio', rx: 360, ry: 160, dur: 20, color: '#ff006e', icon: <><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" /></> },
-  { id: 'video', name: 'Video', rx: 440, ry: 200, dur: 24, color: '#00ffcc', icon: <><path d="m22 8-6 4 6 4V8Z" /><rect width="14" height="12" x="2" y="6" rx="2" ry="2" /></> },
-  { id: 'code', name: 'Code', rx: 520, ry: 240, dur: 28, color: '#ffcc00', icon: <><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></> }
+  { id: 'text', name: 'Text', rx: 200, ry: 200 * ORBIT_RATIO, dur: 12, color: '#00f3ff', angle: 0 },
+  { id: 'image', name: 'Image', rx: 280, ry: 280 * ORBIT_RATIO, dur: 16, color: '#b56cff', angle: 0 },
+  { id: 'audio', name: 'Audio', rx: 360, ry: 360 * ORBIT_RATIO, dur: 20, color: '#ff006e', angle: 0 },
+  { id: 'video', name: 'Video', rx: 440, ry: 440 * ORBIT_RATIO, dur: 24, color: '#00ffcc', angle: 0 },
+  { id: 'code', name: 'Code', rx: 520, ry: 520 * ORBIT_RATIO, dur: 28, color: '#4d9fff', angle: 0 }
 ];
 
 function Typewriter({ text, speed = 30, delay = 0 }) {
@@ -40,6 +41,7 @@ function Typewriter({ text, speed = 30, delay = 0 }) {
       };
       type();
     };
+    
 
     const initialDelay = setTimeout(startTyping, delay);
     return () => {
@@ -58,16 +60,28 @@ function Typewriter({ text, speed = 30, delay = 0 }) {
 
 function VoiceGenerator({ text, color }) {
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [heights, setHeights] = useState(Array(40).fill(1));
+  const barsRef = useRef(null);
   const requestRef = useRef();
+  const lastFrameTime = useRef(0);
+  const barCount = 40;
 
-  const animate = () => {
-    if (isSpeaking) {
-      setHeights(prev => prev.map(() => 0.5 + Math.random() * 2));
+  const animate = (time) => {
+    // Throttle to ~15fps for waveform — no perceptible difference vs 60fps
+    if (time - lastFrameTime.current < 66) {
       requestRef.current = requestAnimationFrame(animate);
-    } else {
-      setHeights(Array(40).fill(1));
+      return;
     }
+    lastFrameTime.current = time;
+
+    if (barsRef.current) {
+      const bars = barsRef.current.children;
+      for (let i = 0; i < bars.length; i++) {
+        const h = 0.5 + Math.random() * 2;
+        bars[i].style.transform = `scaleY(${h})`;
+        bars[i].style.opacity = 0.4 + (h * 0.3);
+      }
+    }
+    requestRef.current = requestAnimationFrame(animate);
   };
 
   useEffect(() => {
@@ -75,7 +89,14 @@ function VoiceGenerator({ text, color }) {
       requestRef.current = requestAnimationFrame(animate);
     } else {
       cancelAnimationFrame(requestRef.current);
-      setHeights(Array(40).fill(1));
+      // Reset bars
+      if (barsRef.current) {
+        const bars = barsRef.current.children;
+        for (let i = 0; i < bars.length; i++) {
+          bars[i].style.transform = 'scaleY(1)';
+          bars[i].style.opacity = '0.2';
+        }
+      }
     }
     return () => cancelAnimationFrame(requestRef.current);
   }, [isSpeaking]);
@@ -108,15 +129,15 @@ function VoiceGenerator({ text, color }) {
   return (
     <>
       <div className="voice-generator-container full-area">
-        <div className={`waveform-visualizer ${isSpeaking ? 'is-speaking' : ''}`} style={{ '--wave-color': color }}>
-          {heights.map((h, i) => (
+        <div className={`waveform-visualizer ${isSpeaking ? 'is-speaking' : ''}`} style={{ '--wave-color': color }} ref={barsRef}>
+          {Array.from({ length: barCount }).map((_, i) => (
             <div 
               key={i} 
               className="wave-line" 
               style={{ 
                 '--idx': i,
-                transform: `scaleY(${isSpeaking ? h : 1})`,
-                opacity: isSpeaking ? 0.4 + (h * 0.3) : 0.2
+                transform: 'scaleY(1)',
+                opacity: 0.2
               }}
             ></div>
           ))}
@@ -321,6 +342,44 @@ function CodeGenerator({ color }) {
   );
 }
 
+const MODALITY_ICONS = {
+  text: <path d="M4 6h16M4 12h16M4 18h10" />,
+  image: <path d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM21 15l-5-5L5 21" />,
+  audio: <><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" /></>,
+  video: <><path d="m22 8-6 4 6 4V8Z" /><rect width="14" height="12" x="2" y="6" rx="2" ry="2" /></>,
+  code: <><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></>
+};
+ 
+ const handleCardTilt = (e) => {
+   const card = e.currentTarget;
+   const rect = card.getBoundingClientRect();
+   const x = e.clientX - rect.left;
+   const y = e.clientY - rect.top;
+   const centerX = rect.width / 2;
+   const centerY = rect.height / 2;
+   const rotateX = ((y - centerY) / centerY) * -10; // Max 10 degrees
+   const rotateY = ((x - centerX) / centerX) * 10; // Max 10 degrees
+ 
+   gsap.to(card, {
+     rotateX: rotateX,
+     rotateY: rotateY,
+     scale: 1.02,
+     duration: 0.5,
+     ease: "power2.out"
+   });
+ };
+ 
+ const resetCardTilt = (e) => {
+   const card = e.currentTarget;
+   gsap.to(card, {
+     rotateX: 0,
+     rotateY: 0,
+     scale: 1,
+     duration: 0.5,
+     ease: "power2.out"
+   });
+ };
+
 
 function GenerativeAISection({ isLoaded }) {
   const containerRef = useRef(null);
@@ -345,32 +404,44 @@ function GenerativeAISection({ isLoaded }) {
       gsap.set(planetsRef.current, { scale: 0 });
       gsap.set(coreRef.current, { scale: 0 });
 
-      tl.to(coreRef.current, { scale: 1, autoAlpha: 1, duration: 0.5, ease: "back.out(2)" })
+      tl.to(coreRef.current, { 
+        scale: 1, 
+        autoAlpha: 1, 
+        duration: 0.5, 
+        ease: "back.out(2)",
+        force3D: true 
+      })
         .to(planetsRef.current, {
           scale: 1,
           autoAlpha: 1,
           duration: 0.5,
-          stagger: 0.05,
           ease: "power2.out",
-          onComplete: () => {
-            planetsData.forEach((planet, i) => {
-              const el = planetsRef.current[i];
+          force3D: true,
+          stagger: {
+            each: 0.08,
+            onComplete: function() {
+              const el = this.targets()[0];
+              const i = planetsRef.current.indexOf(el);
+              const planet = planetsData[i];
               const pathEl = pathsRef.current[i];
-              if (!el || !pathEl) return;
-              const orbit = gsap.to(el, {
-                motionPath: {
-                  path: pathEl,
-                  align: pathEl,
-                  alignOrigin: [0.5, 0.5]
-                },
-                duration: planet.dur,
-                ease: "none",
-                repeat: -1
-              });
-              animationsRef.current[planet.id] = orbit;
-            });
+              
+              if (el && pathEl) {
+                const orbit = gsap.to(el, {
+                  motionPath: {
+                    path: pathEl,
+                    align: pathEl,
+                    alignOrigin: [0.5, 0.5]
+                  },
+                  duration: planet.dur,
+                  ease: "none",
+                  repeat: -1,
+                  force3D: true
+                });
+                animationsRef.current[planet.id] = orbit;
+              }
+            }
           }
-        }, "-=0.8");
+        }, "-=0.3");
     }, containerRef);
     return () => ctx.revert();
   }, [isLoaded]);
@@ -452,15 +523,10 @@ function GenerativeAISection({ isLoaded }) {
 
   return (
     <section className="gen-ai-section" id="generative-ai" ref={containerRef}>
-      <div className="ml-section-bg"></div>
-      <div className="galactic-nebula"></div>
-      <div className="stars-bg"></div>
 
-      <div className="gen-ai-header stagger-root">
-        <h2 className="minimal-heading" data-reveal="up">Generative AI</h2>
-        <p className="minimal-subtext gen-ai-subtext" data-reveal="up" style={{ '--reveal-delay': '100ms' }}>
-          Machines that imagine. By learning complex patterns from massive datasets, Generative AI can create entirely new, original content across multiple modalities.
-        </p>
+      <div className="gen-ai-header-bar">
+        <h2 className="gen-ai-label" data-reveal="up">Gen AI</h2>
+        <p className="gen-ai-subtext" data-reveal="up">Multi-modal neural synthesis across text, image, audio, video &amp; code</p>
       </div>
 
       <div className="orbital-system">
@@ -471,16 +537,40 @@ function GenerativeAISection({ isLoaded }) {
               <stop offset="100%" stopColor="rgba(0, 243, 255, 0)" />
             </radialGradient>
           </defs>
-          {planetsData.map((planet, i) => (
-            <path
-              key={`orbit-${planet.id}`}
-              id={`orbit-${planet.id}`}
-              ref={el => pathsRef.current[i] = el}
-              d={`M 600,${300 - planet.ry} A ${planet.rx},${planet.ry} 0 1,0 600,${300 + planet.ry} A ${planet.rx},${planet.ry} 0 1,0 600,${300 - planet.ry}`}
-              className={`orbit-path ${hoveredModality === planet.id ? 'highlighted' : ''}`}
-              style={{ '--orbit-color': planet.color }}
-            />
-          ))}
+
+
+
+          {planetsData.map((planet, i) => {
+             // Calculate rotated endpoints to ensure GSAP follows the tilted path correctly
+             const rad = (planet.angle * Math.PI) / 180;
+             const sinA = Math.sin(rad);
+             const cosA = Math.cos(rad);
+             
+             // Top point (relative to 600, 300)
+             const tx = 0;
+             const ty = -planet.ry;
+             const rx1 = 600 + (tx * cosA - ty * sinA);
+             const ry1 = 300 + (tx * sinA + ty * cosA);
+             
+             // Bottom point (relative to 600, 300)
+             const bx = 0;
+             const by = planet.ry;
+             const rx2 = 600 + (bx * cosA - by * sinA);
+             const ry2 = 300 + (bx * sinA + by * cosA);
+
+             return (
+              <path
+                key={`orbit-${planet.id}`}
+                id={`orbit-${planet.id}`}
+                ref={el => pathsRef.current[i] = el}
+                d={`M ${rx1},${ry1} A ${planet.rx},${planet.ry} ${planet.angle} 1,0 ${rx2},${ry2} A ${planet.rx},${planet.ry} ${planet.angle} 1,0 ${rx1},${ry1}`}
+                className={`orbit-path ${hoveredModality === planet.id ? 'highlighted' : ''}`}
+                style={{ 
+                  '--orbit-color': planet.color
+                }}
+              />
+             );
+          })}
         </svg>
 
         <div className="synthesis-core" ref={coreRef}>
@@ -497,12 +587,14 @@ function GenerativeAISection({ isLoaded }) {
             onMouseEnter={() => setHoveredModality(planet.id)}
             onMouseLeave={() => setHoveredModality(null)}
             onClick={() => handlePlanetClick(planet.id)}
-            style={{ '--planet-color': planet.color }}
+            style={{ 
+              '--planet-color': planet.color
+            }}
           >
             <div className="planet-halo"></div>
             <div className="planet-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                {planet.icon}
+                {MODALITY_ICONS[planet.id]}
               </svg>
             </div>
             <div className="planet-label">{planet.name}</div>
@@ -512,7 +604,7 @@ function GenerativeAISection({ isLoaded }) {
 
       <div className={`artifact-card-modal ${activeModality ? 'visible' : ''}`}>
         <div className="artifact-card-backdrop" onClick={() => setActiveModality(null)}></div>
-        <div className="artifact-card glassmorphic">
+        <div className="artifact-card glassmorphic" onMouseMove={handleCardTilt} onMouseLeave={resetCardTilt}>
           <button className="close-btn" onClick={() => setActiveModality(null)}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
           </button>
@@ -535,130 +627,148 @@ function GenerativeAISection({ isLoaded }) {
 export default function Home() {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
-  const viewerRef = useRef(null);
   const [isHovered, setIsHovered] = useState(false);
-  const [focusMode, setFocusMode] = useState(false);
   const [activeFlowNode, setActiveFlowNode] = useState(null);
 
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [targetText, setTargetText] = useState("SYSTEM BOOT");
+  const handleMouseMove = (e) => {
+    // 1. Existing gradient logic for text
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      containerRef.current.style.setProperty('--x', `${e.clientX - rect.left}px`);
+      containerRef.current.style.setProperty('--y', `${e.clientY - rect.top}px`);
+    }
 
-  useEffect(() => {
-    if (focusMode) document.body.classList.add('focus-mode-active');
-    else document.body.classList.remove('focus-mode-active');
-  }, [focusMode]);
-
-  const updateBeamAngle = (clientX, clientY) => {
+    // 2. New Mouse Parallax Logic
+    const { clientX, clientY } = e;
     const centerX = window.innerWidth / 2;
-    const centerY = window.innerHeight * 0.55;
-    const dx = clientX - centerX;
-    const dy = clientY - centerY;
-    const angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
-    document.body.style.setProperty('--beam-angle', angle);
+    const centerY = window.innerHeight / 2;
+    const moveX = (clientX - centerX) / centerX; // Range -1 to 1
+    const moveY = (clientY - centerY) / centerY; // Range -1 to 1
+
+    // Foreground (Cyborg) moves slightly towards the mouse direction
+    gsap.to(".cyborg-near", {
+      x: moveX * 50,
+      y: moveY * 30,
+      duration: 0.5,
+      ease: "power2.out"
+    });
+
+    // Background (Blur) moves in the opposite direction for 3D depth
+    gsap.to(".bg-far", {
+      x: moveX * -30,
+      y: moveY * -20,
+      duration: 0.5,
+      ease: "power2.out"
+    });
   };
 
+  // Cinematic Entrance Animation (Emergence Effect)
   useEffect(() => {
-    let mouseTick = false;
-    const handleGlobalMouseMove = (e) => {
-      if (document.body.classList.contains('focus-mode-active')) {
-        if (!mouseTick) {
-          window.requestAnimationFrame(() => {
-            updateBeamAngle(e.clientX, e.clientY);
-            mouseTick = false;
-          });
-          mouseTick = true;
-        }
-      }
-    };
-    document.addEventListener("mousemove", handleGlobalMouseMove);
-    return () => document.removeEventListener("mousemove", handleGlobalMouseMove);
+    const entranceTl = gsap.timeline({
+      defaults: { ease: "power3.out", duration: 3 }
+    });
+
+    // 1. Background settles (Zooms out and clears blur)
+    entranceTl.fromTo(".bg-far",
+      { scale: 1.5, opacity: 0, filter: "blur(20px) brightness(0.4)" },
+      { scale: 1, opacity: 1, filter: "blur(0px) brightness(1)", duration: 3 },
+      0
+    );
+
+    // 2. Cyborg emerges (Zooms in)
+    entranceTl.fromTo(".cyborg-near",
+      { scale: 0.8, opacity: 0 },
+      { scale: 1, opacity: 1 },
+      0.3
+    );
+
+    // 3. UI Elements fade in (Slower and staggered)
+    entranceTl.fromTo(".minimal-header",
+      { opacity: 0, y: -20 },
+      { opacity: 1, y: 0, duration: 2, ease: "power2.out" },
+      1.0
+    );
+
+    entranceTl.fromTo(".minimal-heading",
+      { opacity: 0, y: 30, filter: "blur(8px)" },
+      { opacity: 1, y: 0, filter: "blur(0px)", duration: 2.5, ease: "power2.out" },
+      1.5
+    );
+
+    entranceTl.fromTo(".minimal-subtext",
+      { opacity: 0, y: 20, filter: "blur(4px)" },
+      { opacity: 1, y: 0, filter: "blur(0px)", duration: 2.5, ease: "power2.out" },
+      1.8 // Staggered by 0.3s
+    );
+
+    entranceTl.fromTo(".system-status",
+      { opacity: 0, x: 30, filter: "blur(4px)" },
+      { opacity: 1, x: 0, filter: "blur(0px)", duration: 3, ease: "power2.out" },
+      2.1 // Staggered later
+    );
+
+    // 4. Consolidate: Fade out the near layer to leave the crisp background
+    entranceTl.to(".cyborg-near", { opacity: 0, duration: 1 }, "-=0.5");
+
+    return () => entranceTl.kill();
   }, []);
 
-  const toggleFocusMode = (e) => {
-    const newFocusMode = !focusMode;
-    setFocusMode(newFocusMode);
-    if (newFocusMode) {
-      updateBeamAngle(e.clientX, e.clientY);
-    }
-  };
 
-  const handleMouseMove = (e) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    containerRef.current.style.setProperty('--x', `${e.clientX - rect.left}px`);
-    containerRef.current.style.setProperty('--y', `${e.clientY - rect.top}px`);
-  };
 
-  // Text Scrambling Logic
+
+  // Parallax Scrolling Effects
   useEffect(() => {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*";
-    const target = "SYSTEM ONLINE";
-    let interval;
-
-    if (!isLoaded) {
-      interval = setInterval(() => {
-        let str = "";
-        for (let i = 0; i < target.length; i++) {
-          str += target[i] === " " ? " " : chars.charAt(Math.floor(Math.random() * chars.length));
+    const ctx = gsap.context(() => {
+      // Cinematic Hero Parallax Scroll Transition
+      const heroTl = gsap.timeline({
+        scrollTrigger: {
+          trigger: "#hero",
+          start: "top top",
+          end: "+=100%", // Pin for exactly 100vh of scrolling
+          pin: true,
+          pinSpacing: false, // Essential: allows ML section to slide up and overlap
+          scrub: 1, // Smooth butter scrubbing (60 FPS feel)
         }
-        setTargetText(str);
-      }, 50);
-    } else {
-      setTargetText(target);
-    }
-
-    return () => clearInterval(interval);
-  }, [isLoaded]);
-
-  // Spline load handler
-  const handleSplineLoad = () => {
-    setTimeout(() => {
-      setIsLoaded(true);
-      document.body.classList.add('ready');
-    }, 800);
-  };
-
-  // Fallback loader if spline fails
-  useEffect(() => {
-    const fallback = setTimeout(() => {
-      if (!isLoaded) {
-        setIsLoaded(true);
-        document.body.classList.add('ready');
-      }
-    }, 4000);
-    return () => clearTimeout(fallback);
-  }, [isLoaded]);
-
-  // Logic to hide the Spline logo (Original index.html approach)
-  useEffect(() => {
-    const hideSplineLogo = () => {
-      const viewer = viewerRef.current;
-      if (viewer) {
-        // 1. Shadow DOM hiding (Exact logic from your index.html)
-        if (viewer.shadowRoot) {
-          const logo = viewer.shadowRoot.querySelector('#logo');
-          if (logo) logo.style.display = 'none';
-        }
-
-        // 2. Extra safety for dynamic injection (Scrubbing every 1s)
-        const l = document.querySelector('a[href*="spline.design"]');
-        if (l) l.style.display = 'none';
-      }
-    };
-
-    const interval = setInterval(hideSplineLogo, 1000);
-
-    // Add load listener to viewer
-    const viewer = viewerRef.current;
-    if (viewer) {
-      viewer.addEventListener('load', () => {
-        setIsLoaded(true);
-        document.body.classList.add('ready');
-        hideSplineLogo();
       });
-    }
 
-    return () => clearInterval(interval);
+      // Move text up perfectly in sync with the second page (ML section) over the full scroll duration
+      heroTl.to(".hero-text-container, .system-status-wrapper, .minimal-header", {
+        y: "-100vh", // Matches the exact 100vh scroll
+        ease: "none", // Must be "none" to stay perfectly synced with linear browser scrolling
+        duration: 1
+      }, 0);
+
+      // Fade out text completely by 50% of the scroll, so it's entirely invisible before leaving the screen
+      heroTl.to(".hero-text-container, .system-status-wrapper, .minimal-header", {
+        opacity: 0,
+        ease: "power2.out", // Eases the fade out
+        duration: 0.5 // Takes only the first half of the scroll distance
+      }, 0);
+
+      // Hero background translates up simultaneously over the entire scroll duration
+      heroTl.to(".hero-mouse-parallax", {
+        yPercent: -50, // Move background up to create strong parallax with the rising ML section
+        ease: "none", // Keeps parallax consistent and linear
+        duration: 1
+      }, 0);
+
+      // ML Section Orbs Parallax
+      document.querySelectorAll('.ml-bg-orb').forEach(orb => {
+        const speed = parseFloat(getComputedStyle(orb).getPropertyValue('--parallax-offset')) || 50;
+        gsap.to(orb, {
+          y: speed,
+          ease: "none",
+          scrollTrigger: {
+            trigger: orb.closest('section'),
+            start: "top bottom",
+            end: "bottom top",
+            scrub: true
+          }
+        });
+      });
+    });
+
+    return () => ctx.revert();
   }, []);
 
   // Optimized Cinematic Scroll Management
@@ -709,21 +819,8 @@ export default function Home() {
     setupStaggers();
     document.querySelectorAll('[data-reveal], .mask-reveal').forEach(el => revealObserver.observe(el));
 
-    // Performance: Deep pause of Spline model when not in view
-    const heroObserver = new IntersectionObserver((entries) => {
-      const splineContainer = document.querySelector('.spline-container');
-      if (splineContainer) {
-        const isVisible = entries[0].isIntersecting;
-        splineContainer.style.display = isVisible ? 'block' : 'none'; // Better than visibility: hidden
-      }
-    }, { threshold: 0 });
-
-    const heroSection = document.getElementById('hero');
-    if (heroSection) heroObserver.observe(heroSection);
-
     return () => {
       revealObserver.disconnect();
-      heroObserver.disconnect();
     };
   }, []);
 
@@ -944,18 +1041,24 @@ export default function Home() {
         node.z += (node.tz - node.z) * 0.08;
       });
 
-      // Sort nodes for correct depth rendering (optional but better)
-      const projectedNodes = nodes.map((node, i) => ({
-        ...node,
-        ...project3D(node.x, node.y, node.z, w / 2, h / 2),
-        originalIndex: i
-      })).sort((a, b) => b.depth - a.depth);
+      // Build projection data with O(1) index lookup
+      const projectedByIndex = new Array(nodes.length);
+      const projectedNodes = nodes.map((node, i) => {
+        const proj = {
+          ...node,
+          ...project3D(node.x, node.y, node.z, w / 2, h / 2),
+          originalIndex: i
+        };
+        projectedByIndex[i] = proj;
+        return proj;
+      });
+      projectedNodes.sort((a, b) => b.depth - a.depth);
 
       const lineOpacity = isHovering ? 0.04 : 0.08;
 
       connections.forEach(conn => {
-        const from = projectedNodes.find(n => n.originalIndex === conn.from);
-        const to = projectedNodes.find(n => n.originalIndex === conn.to);
+        const from = projectedByIndex[conn.from];
+        const to = projectedByIndex[conn.to];
         if (!from || !to) return;
 
         ctx.beginPath();
@@ -1090,35 +1193,14 @@ export default function Home() {
 
   return (
     <>
-      <div id="loader-wrapper" className={isLoaded ? 'hidden' : ''}>
-        <div className="decryptor-container">
-          <div className={`decryptor-text ${isLoaded ? 'locked' : ''}`}>{targetText}</div>
-          <div className="decryptor-subtext">
-            {isLoaded ? 'WELCOME TO NEURAL NEXUS' : 'ESTABLISHING NEURAL LINK...'}
-          </div>
-        </div>
-      </div>
       <main>
-        <section className="hero-section" id="hero">
-          <div className="spline-container">
-            <spline-viewer
-              ref={viewerRef}
-              url="https://prod.spline.design/ytNb29B-70AARpHr/scene.splinecode"
-              style={{ width: '100%', height: '100%', pointerEvents: 'none' }}
-              loading="lazy"
-            />
+        <section className="hero-section" id="hero" onMouseMove={handleMouseMove}>
+          <div className="hero-mouse-parallax">
+            {/* Multi-layered background for 3D emergence effect */}
+            <div className="hero-bg bg-far"></div>
+            <div className="hero-bg cyborg-near"></div>
           </div>
 
-          <div className="flashlight-beam"></div>
-
-          <button className="focus-mode-btn" onClick={toggleFocusMode}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 18h6"></path>
-              <path d="M10 22h4"></path>
-              <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"></path>
-            </svg>
-            Focus Mode
-          </button>
 
           <div className="ui-layer">
             <header className="minimal-header">
@@ -1132,17 +1214,19 @@ export default function Home() {
             <div
               className={`hero-text-container interactive-text ${isHovered ? 'is-hovered' : ''}`}
               ref={containerRef}
-              onMouseMove={handleMouseMove}
               onMouseEnter={() => setIsHovered(true)}
               onMouseLeave={() => setIsHovered(false)}
             >
-              <h1 className="minimal-heading">Experience<br />Intelligence</h1>
+              <h1 className="minimal-heading interactive-text" data-reveal="fade-up">
+                NEURAL CORE
+              </h1>
               <p className="minimal-subtext">Designed for the future<br />Beyond code. Beyond logic.</p>
             </div>
 
-            <div className="system-status">
-              <div className="status-dot"></div>
-              <div className="status-text">
+            <div className="system-status-wrapper">
+              <div className="system-status">
+                <div className="status-dot"></div>
+                <div className="status-text">
                 <span className="status-label">System State</span>
                 <span className="status-value">Neural Engine Online</span>
                 <div className="rotating-text-wrapper">
@@ -1155,6 +1239,7 @@ export default function Home() {
                   </div>
                 </div>
               </div>
+            </div>
             </div>
           </div>
         </section>
@@ -1278,7 +1363,8 @@ export default function Home() {
                 {/* Supervised Learning */}
                 <div className="ml-flow-node ml-flow-node--supervised"
                   onMouseEnter={() => setActiveFlowNode('supervised')}
-                  onMouseLeave={() => setActiveFlowNode(null)}
+                  onMouseLeave={(e) => { setActiveFlowNode(null); resetCardTilt(e); }}
+                  onMouseMove={handleCardTilt}
                   style={{ '--node-accent': '#00f3ff', '--node-accent-bg': 'rgba(0,243,255,0.06)', '--node-accent-border': 'rgba(0,243,255,0.2)' }}
                 >
                   <div className="ml-flow-node-icon">
@@ -1295,7 +1381,8 @@ export default function Home() {
                 {/* Unsupervised Learning */}
                 <div className="ml-flow-node ml-flow-node--unsupervised"
                   onMouseEnter={() => setActiveFlowNode('unsupervised')}
-                  onMouseLeave={() => setActiveFlowNode(null)}
+                  onMouseLeave={(e) => { setActiveFlowNode(null); resetCardTilt(e); }}
+                  onMouseMove={handleCardTilt}
                   style={{ '--node-accent': '#b56cff', '--node-accent-bg': 'rgba(181,108,255,0.06)', '--node-accent-border': 'rgba(181,108,255,0.2)' }}
                 >
                   <div className="ml-flow-node-icon">
@@ -1312,7 +1399,8 @@ export default function Home() {
                 {/* Reinforcement Learning */}
                 <div className="ml-flow-node ml-flow-node--reinforcement"
                   onMouseEnter={() => setActiveFlowNode('reinforcement')}
-                  onMouseLeave={() => setActiveFlowNode(null)}
+                  onMouseLeave={(e) => { setActiveFlowNode(null); resetCardTilt(e); }}
+                  onMouseMove={handleCardTilt}
                   style={{ '--node-accent': '#ff006e', '--node-accent-bg': 'rgba(255,0,110,0.06)', '--node-accent-border': 'rgba(255,0,110,0.2)' }}
                 >
                   <div className="ml-flow-node-icon">
@@ -1361,7 +1449,7 @@ export default function Home() {
           </div>
         </section>
 
-        <GenerativeAISection isLoaded={isLoaded} />
+        <GenerativeAISection isLoaded={true} />
       </main>
     </>
   );

@@ -24,7 +24,6 @@ body, html {
   color: var(--text-color);
   font-family: 'Inter', sans-serif;
   scroll-behavior: smooth;
-  scroll-snap-type: y proximity;
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
