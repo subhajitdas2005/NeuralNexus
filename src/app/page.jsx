@@ -627,6 +627,7 @@ function GenerativeAISection({ isLoaded }) {
 export default function Home() {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
+  const parallaxWrapperRef = useRef(null);
   const [isHovered, setIsHovered] = useState(false);
   const [activeFlowNode, setActiveFlowNode] = useState(null);
 
@@ -732,14 +733,14 @@ export default function Home() {
       });
 
       // Move text up perfectly in sync with the second page (ML section) over the full scroll duration
-      heroTl.to(".hero-text-container, .system-status-wrapper, .minimal-header", {
+      heroTl.to(".ui-layer", {
         y: "-100vh", // Matches the exact 100vh scroll
         ease: "none", // Must be "none" to stay perfectly synced with linear browser scrolling
         duration: 1
       }, 0);
 
       // Fade out text completely by 50% of the scroll, so it's entirely invisible before leaving the screen
-      heroTl.to(".hero-text-container, .system-status-wrapper, .minimal-header", {
+      heroTl.to(".ui-layer", {
         opacity: 0,
         ease: "power2.out", // Eases the fade out
         duration: 0.5 // Takes only the first half of the scroll distance
@@ -1191,6 +1192,61 @@ export default function Home() {
     };
   }, []);
 
+  // ML -> NN Parallax Scroll Transition
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      if (!parallaxWrapperRef.current) return;
+      
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: parallaxWrapperRef.current,
+          start: "top top", // Pin when the wrapper hits the top
+          end: "+=2000", // Scroll duration for this transition
+          pin: true,
+          scrub: 1,
+          anticipatePin: 1
+        },
+        defaults: { force3D: true, ease: "none" }
+      });
+
+      // 1. Initial states
+      // Hide ML individual elements for staggered entrance
+      gsap.set(".ml-engine-node, .ml-flow-node, .ml-flow-paths", { y: 150, autoAlpha: 0 });
+      // Hide entire NN container and its orbs to prevent overlap
+      gsap.set(".ml-visualization", { y: 150, autoAlpha: 0 });
+
+      // 2. ML Entrance (Synchronized)
+      tl.to(".ml-flow-paths, .ml-engine-node, .ml-flow-node", { 
+        y: 0, 
+        autoAlpha: 1, 
+        duration: 1, 
+        ease: "power2.out" 
+      }, 0);
+
+      // Pause briefly for user to view ML section
+      tl.addLabel("ml-revealed").to({}, { duration: 0.8 });
+
+      // 3. ML exits upward completely
+      tl.to(".ml-container", {
+        y: -150,
+        autoAlpha: 0,
+        duration: 1.5,
+        ease: "power2.in"
+      }, "ml-revealed+=0.5");
+
+      // 4. NN enters upward AFTER ML has exited
+      tl.to(".ml-visualization", {
+        y: 0,
+        autoAlpha: 1,
+        duration: 1.5,
+        ease: "power2.out"
+      }, ">+=0.2"); // ">+=0.2" means wait 0.2s after the previous animation finishes
+      
+    }, parallaxWrapperRef);
+
+    return () => ctx.revert();
+  }, []);
+
   return (
     <>
       <main>
@@ -1244,12 +1300,10 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="ml-section" id="machine-learning">
-          <div className="ml-section-bg"></div>
+        <div className="parallax-ml-nn-wrapper" ref={parallaxWrapperRef}>
+          <div className="parallax-shared-bg"></div>
 
-          <div className="ml-bg-orb orb-1"></div>
-          <div className="ml-bg-orb orb-2"></div>
-          <div className="ml-bg-orb orb-3"></div>
+          <section className="ml-section parallax-section" id="machine-learning">
 
           <div className="ml-container">
             {/* === INTERACTIVE FLOWCHART ARCHITECTURE === */}
@@ -1416,12 +1470,9 @@ export default function Home() {
               </div>
             </div>
           </div>
-        </section>
+          </section>
 
-        <section className="nn-section" id="neural-networks">
-          <div className="ml-section-bg"></div>
-          <div className="ml-bg-orb orb-2"></div>
-          <div className="ml-bg-orb orb-4"></div>
+          <section className="nn-section parallax-section" id="neural-networks">
 
           <div className="ml-visualization">
             <div className="ml-viz-content stagger-root">
@@ -1448,6 +1499,7 @@ export default function Home() {
             </div>
           </div>
         </section>
+        </div>
 
         <GenerativeAISection isLoaded={true} />
       </main>

@@ -622,29 +622,15 @@ main {
   transform: translate3d(0, 0, 0);
 }
 
+#machine-learning .ml-section-bg {
+  background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.7)), url('/assests/grid bkrnd.jpg') center/cover no-repeat;
+}
+
 /* Removed section::after gradients for sharp transition */
 
 
 
-/* Cinematic Parallax Grid */
-.ml-section::before,
-.nn-section::before {
-  content: '';
-  position: absolute;
-  top: -20%;
-  left: -10%;
-  width: 120%;
-  height: 140%;
-  background-image:
-    linear-gradient(rgba(0, 243, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 243, 255, 0.04) 1px, transparent 1px);
-  background-size: 80px 80px;
-  pointer-events: none;
-  z-index: 0;
-  /* Fade grid at top/bottom edges so sections blend seamlessly */
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
-  mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
-}
+/* Cinematic Parallax Grid Removed */
 
 @keyframes gridPulse {
 
@@ -2589,4 +2575,42 @@ button,
     font-size: 40px;
     letter-spacing: 0.2em;
   }
+}
+
+/* ML -> NN Parallax Wrapper */
+.parallax-ml-nn-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #050505;
+}
+
+.parallax-shared-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)), url('/assests/download (1).jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 0;
+  will-change: transform;
+}
+
+.parallax-section {
+  position: absolute !important;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+  background: transparent !important; /* Ensure background is transparent so parallax-shared-bg shows */
+}
+
+.parallax-section > * {
+  pointer-events: auto;
 }
